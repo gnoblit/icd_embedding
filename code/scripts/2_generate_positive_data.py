@@ -1,6 +1,7 @@
-"""Script exists to generate dataset. Will use previously provided tree structure to generate the nearby cases that the model will mine for similar codes and descriptions. Will consider codes and descriptions from other parts of the tree to be negative cases."""
+"""Script exists to generate dataset. Will use previously provided tree structure to generate the nearby cases that the model will mine for similar codes and descriptions. Assumes any ancestor is a positive pair or that any code with identical ancestors is a positive pair."""
 import polars as pl
 import numpy as np
+from alive_progress import alive_bar
 
 def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/raw_icd10.ndjson', write_path: str='/home/gnoblit/takehome/codametrix/data/clean/'):
     """
@@ -15,53 +16,79 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 
     
     df = pl.read_ndjson(data_path)
-    #print(df.head())
-
-    
-    # df = df.with_columns(
-    #     pl.col('path').str.split('-').alias('path_list')
-    # )
-
-    # df.write_ndjson(write_path + 'train_data.ndjson')
 
     df = df.with_columns(
         pl.all().replace({'None':None})
     )   
     # Generate training data
-    dfs = []
+
+
+    positives = []
     print('starting')
 
-    category_cols = ['code', 'category', 'description']
-    positives = join_dfs(df, category_cols, 'category')
-    dfs.append(positives)
-    print(f'done with category, shape is: {positives.shape}')
+    with alive_bar(df.shape[0]) as bar:
+        positives = []
+        for iter_, el_ in enumerate(df.iter_rows(named=True)):
+            
+            ancestors = el_['ancestors']
+            # Subset out any code in ancestors. This means I won't have duplicates (only go up tree)
+            if ancestors:
+                ancestors_split = el_['ancestors'].split('-')
+                subset_df = df.filter(
+                    (
+                            ( (pl.col('code').is_in(ancestors_split)) | (pl.col('ancestors').eq(ancestors)) ) & (pl.col('code') != el_['code'])
+                    )
+                )
+                
+            subset_df = subset_df.select(['code', 'section', 'description'])
+            subset_df = subset_df.rename(
+                {
+                    'code':'code_right',
+                    'description': 'description_right'
+                }
+            )
 
-    laterality_cols = ['code', 'up_to_laterality', 'description']
-    positives = join_dfs(df, laterality_cols, 'up_to_laterality')
-    dfs.append(positives)
-    print(f'done with laterality, shape is: {positives.shape}')
+            # Set as positive case
+            subset_df = subset_df.with_columns(
+                positive=pl.lit(True),
+                code=pl.lit(el_['code']),
+                description=pl.lit(el_['description'])
+            )
 
-    location_cols = ['code', 'up_to_location', 'description']
-    positives = join_dfs(df, location_cols, 'up_to_location')
-    dfs.append(positives)
-    print(f'done with location, shape is: {positives.shape}')
+            positives.append(subset_df)
 
-    etiology_cols = ['code', 'up_to_etiology', 'description']
-    positives = join_dfs(df, etiology_cols, 'up_to_etiology')
-    dfs.append(positives)
-    print(f'done with etiology, shape is: {positives.shape}')
 
-    category_cols = ['code', 'category', 'description']
+    # category_cols = ['code', 'category', 'description']
+    # positives = join_dfs(df, category_cols, 'category')
+    # dfs.append(positives)
+    # print(f'done with category, shape is: {positives.shape}')
+
+    # laterality_cols = ['code', 'up_to_laterality', 'description']
+    # positives = join_dfs(df, laterality_cols, 'up_to_laterality')
+    # dfs.append(positives)
+    # print(f'done with laterality, shape is: {positives.shape}')
+
+    # location_cols = ['code', 'up_to_location', 'description']
+    # positives = join_dfs(df, location_cols, 'up_to_location')
+    # dfs.append(positives)
+    # print(f'done with location, shape is: {positives.shape}')
+
+    # etiology_cols = ['code', 'up_to_etiology', 'description']
+    # positives = join_dfs(df, etiology_cols, 'up_to_etiology')
+    # dfs.append(positives)
+    # print(f'done with etiology, shape is: {positives.shape}')
+
+    # category_cols = ['code', 'category', 'description']
 
     # dfs.append(join_dfs(df, category_cols, 'category'))
     # print('done with categories')    
 
-    train_df = pl.concat(dfs)
-    train_df = train_df.sort('code')
+    positives_df = pl.concat(positives)
+    positives_df = positives_df.sort('code')
     
     print(train_df.head())
 
-    train_df.write_ndjson(write_path + 'positive_train_data.ndjson')
+    positives_df.write_ndjson(write_path + 'positive_train_data.ndjson')
 
     # Generate negatives
 
