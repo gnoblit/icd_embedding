@@ -86,7 +86,11 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 
     positives_df = pl.concat(positives)
     positives_df = positives_df.sort('code')
+    positives_df = positives_df.select(
+        ['code', 'description', 'code_right', 'description_right', 'positive']
+    )
     
+    print(f'Shape is: {positives_df.shape}')
     print(positives_df.head())
 
     positives_df.write_ndjson(write_path + 'positive_train_data.ndjson')

@@ -6,7 +6,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 
     negatives = []
 
-    negatives = generate_negatives(df, df, 25)
+    negatives = generate_negatives(df, df, 45)
     negative_df = pl.concat(negatives)
     print(f'Done with negatives, shape is: {negative_df.shape}')
     print(negative_df.head())
@@ -40,12 +40,12 @@ def generate_negatives(df, master_df, n: int):
                 description=pl.lit(el_['description'])
             )
             
-            subset_df = subset_df.with_columns(
-                codes = pl.concat_list('code', 'code_right')
-            )
-            subset_df = subset_df.with_columns(
-                codes = pl.col('codes').list.sort()
-            )
+            # subset_df = subset_df.with_columns(
+            #     codes = pl.concat_list('code', 'code_right')
+            # )
+            # subset_df = subset_df.with_columns(
+            #     codes = pl.col('codes').list.sort()
+            # )
 
             subset_df = subset_df.select(
                 [
@@ -53,7 +53,7 @@ def generate_negatives(df, master_df, n: int):
                     'description',
                     'code_right',
                     'description_right',
-                    'codes',
+                    # 'codes',
                     'positive'
                 ]
             )
