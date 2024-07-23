@@ -56,6 +56,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
                 )
 
                 positives.append(subset_df)
+            bar()
 
 
     # category_cols = ['code', 'category', 'description']
