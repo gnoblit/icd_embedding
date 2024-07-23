@@ -50,22 +50,23 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
     laterality_cols = ['code', 'up_to_laterality', 'description']
     positives = join_dfs(df, laterality_cols, 'up_to_laterality')
     dfs.append(positives)
-    print('done with laterality')
+    print(f'done with laterality, shape is: {positives.shape}')
 
     location_cols = ['code', 'up_to_location', 'description']
     positives = join_dfs(df, location_cols, 'up_to_location')
     dfs.append(positives)
-    print('done with location')
+    print(f'done with location, shape is: {positives.shape}')
 
     etiology_cols = ['code', 'up_to_etiology', 'description']
     positives = join_dfs(df, etiology_cols, 'up_to_etiology')
     dfs.append(positives)
-    print('done with etiology')
+    print(f'done with etiology, shape is: {positives.shape}')
+
 
     laterality_cols = ['code', 'up_to_laterality', 'description']
     positives = join_dfs(df, laterality_cols, 'up_to_laterality')
     dfs.append(positives)
-    print('done with laterality')
+    print(f'done with laterality, shape is: {positives.shape}')
 
     category_cols = ['code', 'category', 'description']
 
