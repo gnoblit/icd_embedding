@@ -40,22 +40,22 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
                     )
                 )
                 
-            subset_df = subset_df.select(['code', 'section', 'description'])
-            subset_df = subset_df.rename(
-                {
-                    'code':'code_right',
-                    'description': 'description_right'
-                }
-            )
+                subset_df = subset_df.select(['code', 'section', 'description'])
+                subset_df = subset_df.rename(
+                    {
+                        'code':'code_right',
+                        'description': 'description_right'
+                    }
+                )
 
-            # Set as positive case
-            subset_df = subset_df.with_columns(
-                positive=pl.lit(True),
-                code=pl.lit(el_['code']),
-                description=pl.lit(el_['description'])
-            )
+                # Set as positive case
+                subset_df = subset_df.with_columns(
+                    positive=pl.lit(True),
+                    code=pl.lit(el_['code']),
+                    description=pl.lit(el_['description'])
+                )
 
-            positives.append(subset_df)
+                positives.append(subset_df)
 
 
     # category_cols = ['code', 'category', 'description']
@@ -86,7 +86,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
     positives_df = pl.concat(positives)
     positives_df = positives_df.sort('code')
     
-    print(train_df.head())
+    print(positives_df.head())
 
     positives_df.write_ndjson(write_path + 'positive_train_data.ndjson')
 
