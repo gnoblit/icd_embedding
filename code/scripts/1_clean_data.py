@@ -20,15 +20,15 @@ def clean_data(text_path: str='/home/gnoblit/takehome/codametrix/data/supplied/i
                 'category': line_[6:9].rstrip(),
                 'details': line_[9:13].rstrip(),
 
-                'section': line_[6].rstrip(),
-                'part': line_[7].rstrip(),
-                'root_operation': line_[8].rstrip(),
+                'section': line_[6].rstrip() if line_[6].rstrip() else 'None',
+                'part': line_[7].rstrip() if line_[7].rstrip() else 'None',
+                'root_operation': line_[8].rstrip() if line_[8].rstrip() else 'None',
 
-                'etiology': line_[9].rstrip(),
-                'location': line_[10].rstrip(),
-                'laterality': line_[11].rstrip(),
+                'etiology': line_[9].rstrip() if line_[9].rstrip() else 'None',
+                'location': line_[10].rstrip() if line_[10].rstrip() else 'None',
+                'laterality': line_[11].rstrip() if line_[11].rstrip() else 'None',
                 
-                'extension': line_[12].rstrip(),
+                'extension': line_[12].rstrip() if line_[12].rstrip() else 'None',
 
                 'up_to_etiology': path_split[2] if len(path_split)>2 else "None",
 

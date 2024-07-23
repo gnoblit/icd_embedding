@@ -17,25 +17,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
     df = pl.read_ndjson(data_path)
     #print(df.head())
 
-    df = (df.with_columns(
-        pl.when(
-        pl.col('up_to_laterality').eq(pl.col('up_to_location'))
-            )
-        .then(pl.lit('None'))
-        .otherwise(pl.col('up_to_laterality'))
-        .alias('up_to_laterality')
-    ))
     
-    df = (df.with_columns(
-        pl.when(
-            pl.col('up_to_location').eq(pl.col('up_to_etiology'))
-            )
-        .then(pl.lit('None'))
-        .otherwise(pl.col('up_to_location'))
-        .alias('up_to_location'),
-    ))
-
-
     # df = df.with_columns(
     #     pl.col('path').str.split('-').alias('path_list')
     # )
