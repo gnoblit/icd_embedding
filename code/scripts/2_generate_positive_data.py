@@ -1,5 +1,6 @@
 """Script exists to generate dataset. Will use previously provided tree structure to generate the nearby cases that the model will mine for similar codes and descriptions. Will consider codes and descriptions from other parts of the tree to be negative cases."""
 import polars as pl
+import numpy as np
 
 def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/raw_icd10.ndjson', write_path: str='/home/gnoblit/takehome/codametrix/data/clean/'):
     """
@@ -20,7 +21,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
         pl.when(
         pl.col('up_to_laterality').eq(pl.col('up_to_location'))
             )
-        .then(pl.lit(''))
+        .then(pl.lit('None'))
         .otherwise(pl.col('up_to_laterality'))
         .alias('up_to_laterality')
     ))
@@ -29,7 +30,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
         pl.when(
             pl.col('up_to_location').eq(pl.col('up_to_etiology'))
             )
-        .then(pl.lit(''))
+        .then(pl.lit('None'))
         .otherwise(pl.col('up_to_location'))
         .alias('up_to_location'),
     ))
@@ -42,11 +43,17 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
     # df.write_ndjson(write_path + 'train_data.ndjson')
 
     df = df.with_columns(
-        pl.all().replace({'':None})
+        pl.all().replace({'None':None})
     )   
     # Generate training data
     dfs = []
     print('starting')
+
+    category_cols = ['code', 'category', 'description']
+    positives = join_dfs(df, category_cols, 'category')
+    dfs.append(positives)
+    print(f'done with category, shape is: {positives.shape}')
+
     laterality_cols = ['code', 'up_to_laterality', 'description']
     positives = join_dfs(df, laterality_cols, 'up_to_laterality')
     dfs.append(positives)
@@ -62,18 +69,13 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
     dfs.append(positives)
     print(f'done with etiology, shape is: {positives.shape}')
 
-
-    laterality_cols = ['code', 'up_to_laterality', 'description']
-    positives = join_dfs(df, laterality_cols, 'up_to_laterality')
-    dfs.append(positives)
-    print(f'done with laterality, shape is: {positives.shape}')
-
     category_cols = ['code', 'category', 'description']
 
     # dfs.append(join_dfs(df, category_cols, 'category'))
     # print('done with categories')    
 
     train_df = pl.concat(dfs)
+    train_df = train_df.sort('code')
     
     print(train_df.head())
 
@@ -85,25 +87,49 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 def join_dfs(df, cols: list, join_term: str):
     """Function joins df subsets of cols columns on the join_term and returns unique rows"""
 
-    df = df.select(cols).join(
-        df.select(cols),
+    pl.Config.set_streaming_chunk_size(100)
+    df = df.select(cols)
+    clone = df.clone()
+
+
+    df = df.lazy().join(
+        clone.lazy(),
         how='left',
         on=join_term
-    ).filter(~(pl.col('description').eq(pl.col('description_right')))).drop(join_term)
+    ).collect(streaming=True)
+
+    del clone
+    
+    df = df.filter(~(pl.col('description').eq(pl.col('description_right'))))
+    df = df.drop(join_term)
+
+    l = np.zeros(df.shape[0], 2)
+    for iter_, el_ in enumerate(df.iter_rows(named=True)):
+        l_temp = [el_['code'], el_['code_right']]
+        l_temp.sort()
+        l[iter_] = l_temp
 
     df = df.with_columns(
-        codes = pl.concat_list('code', 'code_right')
-    )
-    df = df.with_columns(
-        codes = pl.col('codes').list.sort()
-    )
+        codes=pl.Series(l),
+        positive=pl.lit(True))
+    # df = df.lazy().with_columns(
+    #     codes=pl.concat_str('code', 'code_right')
+    #     ).collect(streaming=True)
+    # df = df.lazy().with_columns(
+    #     codes=pl.col('codes').str.split('-')
+    # ).collect(streaming=True)
+    
+    # df = df.lazy().with_columns(
+    #     codes=pl.col('codes').list.sort()
+    # ).collect(streaming=True)
 
-    df = df.with_columns(
-        # section=pl.col('code').str.slice(0, 1),
-        positive=pl.lit(True)
-    )
+    # df = df.with_columns(
+    #     # section=pl.col('code').str.slice(0, 1),
+    #     positive=pl.lit(True)
+    #     )
 
-    df = df.unique('codes').sort('code')
+    df = df.unique('codes')
+    df = df.sort('code')
 
     return df
 

@@ -8,8 +8,14 @@ def clean_data(text_path: str='/home/gnoblit/takehome/codametrix/data/supplied/i
 
     with open(text_path) as f:
         for line_ in f:
+            path = f'{line_[6]}-{line_[6:9].rstrip()}-{line_[6:10].rstrip()}-{line_[6:11].rstrip()}-{line_[6:12].rstrip()}-{line_[6:13].rstrip()}'
+            path = create_path(path)
+            path_split = path.split('-')
+            ancestors = '-'.join(path.split('-')[1:-1])
+
             file = {
-                'path': f'{line_[6]}-{line_[6:9].rstrip()}-{line_[6:10].rstrip()}-{line_[6:11].rstrip()}-{line_[6:12].rstrip()}-{line_[6:13].rstrip()}',
+                'path': path,
+                'ancestors': ancestors,
                 'code': line_[6:14].rstrip(), 
                 'category': line_[6:9].rstrip(),
                 'details': line_[9:13].rstrip(),
@@ -24,21 +30,18 @@ def clean_data(text_path: str='/home/gnoblit/takehome/codametrix/data/supplied/i
                 
                 'extension': line_[12].rstrip(),
 
-                'up_to_etiology': line_[6:10].rstrip(),
+                'up_to_etiology': path_split[2] if len(path_split)>2 else "None",
 
-                'up_to_location': line_[6:11].rstrip(),
-                'up_to_laterality': line_[6:12].rstrip(),
+                'up_to_location': path_split[3] if len(path_split)>3 else "None",
+                'up_to_laterality': path_split[4] if len(path_split)>4 else "None",
 
                 'description': line_.rstrip()[77:]
             } 
-            file['path'] = create_path(file['path'])
-            file['ancestors'] = '-'.join(file['path'].split('-')[1:-1])
             lines.append(file)
 
             nodes = file['path'].split('-')
             for iter_ in range(len(nodes)-1):
                 tree.setdefault(nodes[iter_], set()).add(nodes[iter_+1])
-    
     # Saves    
     with open(write_path + '/raw_icd10.ndjson', 'w') as f:
         ndjson.dump(lines, f)

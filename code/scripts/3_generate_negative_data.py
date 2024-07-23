@@ -6,9 +6,10 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 
     negatives = []
 
-    negatives = generate_negatives(df, df, 15)
+    negatives = generate_negatives(df, df, 25)
     negative_df = pl.concat(negatives)
     print(f'Done with negatives, shape is: {negative_df.shape}')
+    print(negative_df.head())
     negative_df.write_ndjson(write_path + 'negative_train_data.ndjson')
 
 def generate_negatives(df, master_df, n: int):
@@ -58,7 +59,7 @@ def generate_negatives(df, master_df, n: int):
             )
             
             negatives.append(subset_df)
-            bar
+            bar()
     return negatives
 
 if __name__ == '__main__':
