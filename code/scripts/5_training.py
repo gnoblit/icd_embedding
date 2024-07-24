@@ -1,4 +1,3 @@
-import polars as pl
 from sentence_transformers import SentenceTransformer, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
 from sentence_transformers.evaluation import TripletEvaluator
 from sentence_transformers.losses import TripletLoss
@@ -25,7 +24,7 @@ def main(
     model = SentenceTransformer(model)
     loss = TripletLoss(model=model)
 
-    dataset = load_dataset(data_files=triplets_path + 'triplet_data.parquet', path=triplets_path, num_proc=-1, split='train[:10000]' )
+    train_dataset = load_dataset(data_files=triplets_path + 'triplet_data.parquet', path=triplets_path, num_proc=-1, split='train' )
     dataset = dataset.shuffle().remove_columns('genre')
     print('dataset: ', dataset)
     
