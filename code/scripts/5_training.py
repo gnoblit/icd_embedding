@@ -1,5 +1,6 @@
 import polars as pl
-from sentence_transformers import SentenceTransformer, SentenceTransformerTrainer, SentenceTransformerTrainingArguments, TripletEvaluator
+from sentence_transformers import SentenceTransformer, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
+from sentence_transformers.evaluation import TripletEvaluator
 from sentence_transformers.losses import TripletLoss
 
 from datasets import load_dataset, DatasetDict
@@ -8,7 +9,7 @@ from datetime import datetime
 import logging
 
 def main(
-        triplets_path: str='/home/gnoblit/takehome/codametrix/data/clean/triplet_data.parquet',
+        triplets_path: str='/home/gnoblit/takehome/codametrix/data/clean/',
         model: str='sentence-transformers/all-mpnet-base-v2',
         model_path: str='/home/gnoblit/takehome/codametrix/models/',
         ):
@@ -18,21 +19,23 @@ def main(
     logging.basicConfig(format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
 
 
-    output_dir = model_path + model.split('/')[-1] + + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_dir = model_path + model.split('/')[-1] + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     print(f'Output dir: {output_dir}')
 
     model = SentenceTransformer(model)
     loss = TripletLoss(model=model)
 
-    dataset = load_dataset(triplets_path)[:100]
-    dataset.shuffle()
+    dataset = load_dataset(data_files=triplets_path + 'triplet_data.parquet', path=triplets_path, num_proc=-1, split='train[:10000]' )
+    dataset = dataset.shuffle().remove_columns('genre')
+    print('dataset: ', dataset)
+    
 
-    train_test_split  = dataset.train_test_split(test_size=0.1, stratify_by_column='genre')
-    test_valid = train_test_split['test'].train_test_split(test=0.5, stratify_by_column='genre')
+    train_test_split  = dataset.train_test_split(test_size=0.1)
+    test_valid = train_test_split['test'].train_test_split(test_size=0.5)
     train_test_valid_datasets = DatasetDict({
-        'train': train_test_split['train'].remove_columns(["genre"]),
-        'test': test_valid['test'].remove_columns(["genre"]),
-        'valid': test_valid['train'].remove_columns(["genre"])})
+        'train': train_test_split['train'],
+        'test': test_valid['test'],
+        'valid': test_valid['train']})
     
     del dataset
 

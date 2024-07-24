@@ -1,2 +1,4 @@
 codametrix_venv/
 data/
+models/
+wandb/
