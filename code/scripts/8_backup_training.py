@@ -25,7 +25,7 @@ def main(
     word_embedding_model.auto_model.resize_token_embeddings(len(word_embedding_model.tokenizer))
     print(f'new number of tokens {len(model.tokenizer)}')
 
-    loss = CosineSimilarityLoss(model=model,)
+    loss = CosineSimilarityLoss(model=model, )
 
     dataset = load_dataset(data_files='triplet_data.parquet', path=data_path, split='train').remove_columns('genre')    
 

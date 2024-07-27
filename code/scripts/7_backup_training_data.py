@@ -27,6 +27,7 @@ def main(
     print(f'negative read, size: {negatives_df.shape}')
     
     df = pl.concat([positives_df, negatives_df])
+    print(df.head())
     print('dfs concatenated')
     # Generate cosine similarity between labels. Use this to train 
     model = SentenceTransformer(model, trust_remote_code=True)
@@ -42,8 +43,9 @@ def main(
             distances.append(cosine_sim)
             bar()
 
+    print(f'len distances: {len(distances)}; shape df: {df.shape}')
     df = df.with_columns(
-        cosine_sim = distances
+        pl.Series(name='cosine_sim', values=distances)
     )
     del embeddings_1
     del embeddings_2
@@ -53,9 +55,9 @@ def main(
     # Want to train on following pairs: text-text, id-id, id-text
     train_df = pl.concat(
         [
-            df.select(['code', 'code_right', 'cosine_sim']).rename({'code': 'anchor', 'code_right': 'other'}),
-            df.select(['code', 'description_right', 'cosine_sim']).rename({'code': 'anchor', 'description_right': 'other'}),
-            #df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'code_right': 'other'}),
+            df.select(['code_anchor', 'code_right', 'cosine_sim']).rename({'code_anchor': 'anchor', 'code_right': 'other'}),
+            df.select(['code_anchor', 'description_right', 'cosine_sim']).rename({'code_anchor': 'anchor', 'description_right': 'other'}),
+            df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'code_right': 'other'}),
             df.select(['description_anchor', 'description_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'description_right': 'other'})
         ]
     )
