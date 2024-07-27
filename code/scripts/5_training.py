@@ -35,7 +35,7 @@ def main(
 
     loss = TripletLoss(model=model, triplet_margin=1)
 
-    dataset = load_dataset(data_files='triplet_data.parquet', path=triplets_path, split='train').remove_columns('genre')    
+    dataset = load_dataset(data_files='triplet_data.parquet', path=triplets_path, split='train').remove_columns('genre')
 
     del code
     del codes

@@ -1,4 +1,5 @@
-def main():
+def main(model_path: str,
+         top_k: int=5):
     """Function exists to generate embeddings for all words within the corpus of descriptions associated with the ICD10 descriptions."""
 
     import polars as pl
@@ -19,7 +20,8 @@ def main():
     
     print(f'Number of unique words in descriptions: {len(description_words)}')
 
-    model = SentenceTransformer('/home/gnoblit/takehome/codametrix/models/all-MiniLM-L6-v2_2024-07-25_08-45-44/fine_tuned')
+    model_hex = model_path.split('/')[-2]
+    model = SentenceTransformer('model_path')
 
     # Embed words
     word_embeddings = model.encode(description_words, convert_to_tensor=True)
@@ -28,10 +30,8 @@ def main():
     # Save embeddings
     word_df = pl.DataFrame({'words':description_words, 'embedding':word_embeddings})
     code_df = pl.DataFrame({'codes':codes, 'embeddings':code_embeddings})
-    word_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/words.ndjson')
-    code_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/codes.ndjson')
-
-    top_k = 5
+    word_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/words.ndjson')
+    code_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/codes.ndjson')
 
     hits = semantic_search(code_embeddings, word_embeddings, top_k=top_k)
 
@@ -63,7 +63,7 @@ def main():
             )
 
     solution_df = pl.from_dicts(solution)
-    solution_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/keyword_solutions.ndjson')
+    solution_df.write_ndjson(f'/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/keyword_solutions.ndjson')
     
 
 def flatten(arg) -> list:

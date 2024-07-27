@@ -55,16 +55,15 @@ def main(
     # Want to train on following pairs: text-text, id-id, id-text
     train_df = pl.concat(
         [
-            df.select(['code_anchor', 'code_right', 'cosine_sim']).rename({'code_anchor': 'anchor', 'code_right': 'other'}),
-            df.select(['code_anchor', 'description_right', 'cosine_sim']).rename({'code_anchor': 'anchor', 'description_right': 'other'}),
-            df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'code_right': 'other'}),
-            df.select(['description_anchor', 'description_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'description_right': 'other'})
+            df.select(['code_anchor', 'code_right', 'cosine_sim']).rename({'code_anchor': 'sentence1', 'code_right': 'sentence2', 'cosine_sim': 'score'}),
+            df.select(['code_anchor', 'description_right', 'cosine_sim']).rename({'code_anchor': 'sentence1', 'description_right': 'sentence2', 'cosine_sim': 'score'}),
+            df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'sentence1', 'code_right': 'sentence2', 'cosine_sim': 'score'}),
+            df.select(['description_anchor', 'description_right', 'cosine_sim']).rename({'description_anchor': 'sentence1', 'description_right': 'sentence2', 'cosine_sim': 'score'})
         ]
     )
     del df
     print(f'training df size: {train_df.shape}')
     train_df = train_df.sample(fraction=1, shuffle=True)
-
     print(f'Size of training data: {train_df.shape}')
 
     print(train_df.head())
