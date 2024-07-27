@@ -7,6 +7,7 @@ def main(
     import polars as pl
     from sentence_transformers import SentenceTransformer
     from scipy.spatial.distance import cosine
+    from alive_progress import alive_bar
 
     positives_df = pl.read_ndjson(pos_path).drop('positive').rename(
         {
@@ -17,24 +18,31 @@ def main(
         }
     ).select(['code_anchor', 'description_anchor', 'code_right', 'description_right']).sort('code_anchor')
     
-    negatives_df = pl.read_ndjson(neg_path).drop(['positive', 'description']).rename(
+    negatives_df = pl.read_ndjson(neg_path).drop(['positive']).rename(
         {
             'code': 'code_anchor',    
+            'description': 'description_anchor'
         }
     )
 
     df = pl.concat([positives_df, negatives_df])
 
     # Generate cosine similarity between labels. Use this to train 
-    model = SentenceTransformer(model)
+    model = SentenceTransformer(model, trust_remote_code=True)
 
     embeddings_1 = model.encode(df['description_anchor'].to_list())
     embeddings_2 = model.encode(df['description_right'].to_list())
-    distances = [1-cosine(i_, j_) for i_, j_ in zip(embeddings_1, embeddings_2)]
+    distances = []
+    with alive_bar(len(embeddings_2)) as bar:
+        for i_, j_ in zip(embeddings_1, embeddings_2):
+            cosine_sim = 1-cosine(i_, j_)
+            distances.append(cosine_sim)
+            bar()
+            
     df = df.with_columns(
         cosine_sim = distances
     )
-
+    print('done with cosine')
     # Want to train on following pairs: text-text, id-id, id-text
     train_df = pl.concat(
         [
