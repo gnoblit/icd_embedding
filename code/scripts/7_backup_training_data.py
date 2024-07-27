@@ -3,7 +3,7 @@ def main(
         pos_path: str='/home/gnoblit/takehome/codametrix/data/clean/positive_train_data.ndjson', 
         neg_path: str='/home/gnoblit/takehome/codametrix/data/clean/negative_train_data.ndjson', 
         write_path: str='/home/gnoblit/takehome/codametrix/data/clean/',
-        model: str='Alibaba-NLP/gte-large-en-v1.5'):
+        model: str='sentence-transformers/all-mpnet-base-v2'):
     import polars as pl
     from sentence_transformers import SentenceTransformer
     from scipy.spatial.distance import cosine
@@ -17,22 +17,24 @@ def main(
             'code': 'code_right'
         }
     ).select(['code_anchor', 'description_anchor', 'code_right', 'description_right']).sort('code_anchor')
-    print('positives read')
+    print(f'positives read, size: {positives_df.shape}')
     negatives_df = pl.read_ndjson(neg_path).drop(['positive']).rename(
         {
             'code': 'code_anchor',    
             'description': 'description_anchor'
         }
     )
-    print('negative read')
+    print(f'negative read, size: {negatives_df.shape}')
+    
     df = pl.concat([positives_df, negatives_df])
     print('dfs concatenated')
     # Generate cosine similarity between labels. Use this to train 
     model = SentenceTransformer(model, trust_remote_code=True)
     print('model loaded')
     embeddings_1 = model.encode(df['description_anchor'].to_list())
+    print('first column embedded')
     embeddings_2 = model.encode(df['description_right'].to_list())
-    print('everything embedded')
+    print('second column embedded')
     distances = []
     with alive_bar(len(embeddings_2)) as bar:
         for i_, j_ in zip(embeddings_1, embeddings_2):
