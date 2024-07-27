@@ -3,7 +3,7 @@ def main(
         pos_path: str='/home/gnoblit/takehome/codametrix/data/clean/positive_train_data.ndjson', 
         neg_path: str='/home/gnoblit/takehome/codametrix/data/clean/negative_train_data.ndjson', 
         write_path: str='/home/gnoblit/takehome/codametrix/data/clean/',
-        model: str='sentence-transformers/all-mpnet-base-v2'):
+        model: str='sentence-transformers/all-MiniLM-L12-v2'):
     import polars as pl
     from sentence_transformers import SentenceTransformer
     from scipy.spatial.distance import cosine
@@ -45,16 +45,23 @@ def main(
     df = df.with_columns(
         cosine_sim = distances
     )
+    del embeddings_1
+    del embeddings_2
+    del model
+
     print('done with cosine')
     # Want to train on following pairs: text-text, id-id, id-text
     train_df = pl.concat(
         [
             df.select(['code', 'code_right', 'cosine_sim']).rename({'code': 'anchor', 'code_right': 'other'}),
             df.select(['code', 'description_right', 'cosine_sim']).rename({'code': 'anchor', 'description_right': 'other'}),
-            df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'code_right': 'other'}),
+            #df.select(['description_anchor', 'code_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'code_right': 'other'}),
             df.select(['description_anchor', 'description_right', 'cosine_sim']).rename({'description_anchor': 'anchor', 'description_right': 'other'})
         ]
-    ).sample(fraction=1, shuffle=True)
+    )
+    del df
+    print(f'training df size: {train_df.shape}')
+    train_df = train_df.sample(fraction=1, shuffle=True)
 
     print(f'Size of training data: {train_df.shape}')
 
