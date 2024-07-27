@@ -6,7 +6,7 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
 
     negatives = []
 
-    negatives = generate_negatives(df, df, 20)
+    negatives = generate_negatives(df, df, 10)
     negative_df = pl.concat(negatives)
     print(f'Done with negatives, shape is: {negative_df.shape}')
     print(negative_df.head())

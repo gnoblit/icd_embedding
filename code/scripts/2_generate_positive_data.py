@@ -36,7 +36,9 @@ def generate_data(data_path: str='/home/gnoblit/takehome/codametrix/data/clean/r
                 ancestors_split = el_['ancestors'].split('-')
                 subset_df = df.filter(
                     (
-                            ( (pl.col('code').is_in(ancestors_split)) | (pl.col('ancestors').eq(ancestors)) ) & (pl.col('code') != el_['code'])
+                            ( 
+                                (pl.col('code').is_in(ancestors_split[:3])) #| (pl.col('ancestors').eq(ancestors)) 
+                                ) & (pl.col('code') != el_['code'])
                     )
                 )
                 

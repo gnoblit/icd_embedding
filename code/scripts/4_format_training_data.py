@@ -20,7 +20,7 @@ def main(
         }
     ).select(['code_anchor', 'description_anchor', 'code_positive', 'description_positive']).sort('code_anchor')
     
-    negatives_df = pl.read_ndjson('/home/gnoblit/takehome/codametrix/data/clean/negative_train_data.ndjson').drop(['positive', 'description']).rename({'code': 'code_anchor',          
+    negatives_df = pl.read_ndjson(neg_path).drop(['positive', 'description']).rename({'code': 'code_anchor',          
         'code_right': 'code_negative', 'description_right': 'description_negative'})
     
     train_df = positives_df.join(
@@ -44,7 +44,7 @@ def main(
     mix_3 = train_df.select(['description_anchor', 'description_positive', 'code_negative']).with_columns(genre=pl.lit('ddc')).rename({'description_anchor': 'anchor', 'description_positive': 'positive', 'code_negative':'negative'})
 
 
-    train_df = pl.concat([only_codes, only_descriptions, mix_1, mix_2, mix_3])
+    train_df = pl.concat([only_codes, only_descriptions, mix_1])
     del only_codes
     del only_descriptions
     del mix_1
@@ -56,6 +56,10 @@ def main(
     print(f'final df shape: {train_df.shape}')
     print(train_df.head())
     train_df.write_parquet(write_path + 'triplet_data.parquet')
+    print('done with parquet')
+    train_df.write_ndjson(write_path + 'triplet_data.ndjson')
+    print('json done!')
+    train_df.write_csv(write_path + 'triplet_data.csv')
     print('done!')
 
 if __name__ == '__main__':
