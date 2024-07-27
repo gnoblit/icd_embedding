@@ -17,28 +17,29 @@ def main(
             'code': 'code_right'
         }
     ).select(['code_anchor', 'description_anchor', 'code_right', 'description_right']).sort('code_anchor')
-    
+    print('positives read')
     negatives_df = pl.read_ndjson(neg_path).drop(['positive']).rename(
         {
             'code': 'code_anchor',    
             'description': 'description_anchor'
         }
     )
-
+    print('negative read')
     df = pl.concat([positives_df, negatives_df])
-
+    print('dfs concatenated')
     # Generate cosine similarity between labels. Use this to train 
     model = SentenceTransformer(model, trust_remote_code=True)
-
+    print('model loaded')
     embeddings_1 = model.encode(df['description_anchor'].to_list())
     embeddings_2 = model.encode(df['description_right'].to_list())
+    print('everything embedded')
     distances = []
     with alive_bar(len(embeddings_2)) as bar:
         for i_, j_ in zip(embeddings_1, embeddings_2):
             cosine_sim = 1-cosine(i_, j_)
             distances.append(cosine_sim)
             bar()
-            
+
     df = df.with_columns(
         cosine_sim = distances
     )
