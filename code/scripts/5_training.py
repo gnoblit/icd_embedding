@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer, SentenceTransformerTrainer, SentenceTransformerTrainingArguments
 from sentence_transformers.evaluation import TripletEvaluator
-from sentence_transformers.losses import TripletLoss
+from sentence_transformers.losses import MultipleNegativesRankingLoss
 
 from datasets import load_dataset, load_from_disk, DatasetDict
 
@@ -11,7 +11,7 @@ import polars as pl
 
 def main(
         triplets_path: str='/home/gnoblit/takehome/codametrix/data/clean/',
-        model: str='sentence-transformers/all-MiniLM-L12-v2',
+        model: str='sentence-transformers/all-MiniLM-L6-v2',
         model_path: str='/home/gnoblit/takehome/codametrix/models/',
         ):
     """
@@ -33,7 +33,7 @@ def main(
     word_embedding_model.auto_model.resize_token_embeddings(len(word_embedding_model.tokenizer))
     print(f'new number of tokens {len(model.tokenizer)}')
 
-    loss = TripletLoss(model=model, triplet_margin=1)
+    loss = MultipleNegativesRankingLoss(model=model)
 
     dataset = load_dataset(data_files='triplet_data.parquet', path=triplets_path, split='train').remove_columns('genre')
 
@@ -61,18 +61,18 @@ def main(
     # print('dev_evaluator')
     args = SentenceTransformerTrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=1,
-        per_device_train_batch_size=128,
+        num_train_epochs=5,
+        per_device_train_batch_size=64,
         # per_device_eval_batch_size=32,
-        learning_rate=2e-7,
-        warmup_ratio=0.05,
+        learning_rate=2e-5,
+        warmup_ratio=0.0,
         auto_find_batch_size=True,
         # eval_strategy="steps",
         # eval_steps=.05,
         save_strategy="steps",
-        save_steps=.1,
+        save_steps=.05,
         logging_strategy='steps',
-        logging_steps=.05,
+        logging_steps=.01,
         logging_first_step=True,
         run_name=output_dir.split('/')[-1],  
         report_to='wandb'

@@ -1,5 +1,6 @@
-def main(model_path: str,
-         top_k: int=5):
+def main(model_path: str='/home/gnoblit/takehome/codametrix/models/all-MiniLM-L6-v2_2024-08-02_20-10-13/checkpoint-197000',
+         top_k: int=5,
+         ):
     """Function exists to generate embeddings for all words within the corpus of descriptions associated with the ICD10 descriptions."""
 
     import polars as pl
@@ -13,25 +14,36 @@ def main(model_path: str,
     
 
     descriptions = corpus['description'].str.split(' ').to_list()
-    description_words = flatten(descriptions)
-    description_words = list(set([el_.lower().strip('()') for el_ in description_words if len(el_) > 4]))   
+
+    s = set()
+    descriptions = corpus['description'].str.split(' ').to_list()
+    for i_ in descriptions:
+        s.update(set(i_))
+    description_words = list(set([''.join(filter(str.isalpha, el_)).lower() for el_ in s if len(''.join(filter(str.isalnum, el_)))>3]))
+    print(f'Description words: {description_words[:10]}')
 
     del corpus 
     
     print(f'Number of unique words in descriptions: {len(description_words)}')
 
     model_hex = model_path.split('/')[-2]
-    model = SentenceTransformer('model_path')
+    model = SentenceTransformer(model_path)
 
     # Embed words
-    word_embeddings = model.encode(description_words, convert_to_tensor=True)
-    code_embeddings = model.encode(codes, convert_to_tensor=True)
+    word_embeddings = model.encode(description_words)
+    code_embeddings = model.encode(codes)
 
     # Save embeddings
     word_df = pl.DataFrame({'words':description_words, 'embedding':word_embeddings})
+    print(word_df.head())
     code_df = pl.DataFrame({'codes':codes, 'embeddings':code_embeddings})
-    word_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/words.ndjson')
-    code_df.write_ndjson('/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/codes.ndjson')
+    print(code_df.head())
+    print(code_df.tail())
+
+    
+
+    word_df.write_ndjson(f'{model_path}/words.ndjson')
+    code_df.write_ndjson(f'{model_path}/codes.ndjson')
 
     hits = semantic_search(code_embeddings, word_embeddings, top_k=top_k)
 
@@ -41,7 +53,7 @@ def main(model_path: str,
             keywords = []
             scores = []
             for i_ in q_:
-                 keywords.append(i_['corpus_id'])
+                 keywords.append(description_words[i_['corpus_id']])
                  scores.append(i_['score'])
             solution.append(
                 {
@@ -63,7 +75,9 @@ def main(model_path: str,
             )
 
     solution_df = pl.from_dicts(solution)
-    solution_df.write_ndjson(f'/home/gnoblit/takehome/codametrix/data/clean/embeddings/{model_hex}/keyword_solutions.ndjson')
+    solution_df = solution_df.sort('code')
+    print(solution_df.sample(10).select(['code', 'keywords', 'scores']))
+    solution_df.write_ndjson(f'{model_path}/keyword_solutions.ndjson')
     
 
 def flatten(arg) -> list:
